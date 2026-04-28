@@ -1,0 +1,261 @@
+--// KAWATAN LAGGER (CLEAN GREEN UI) + BANNER REMOVER (Instant)
+
+-- =====================================================
+-- BANNER REMOVER (runs instantly, no delay)
+-- =====================================================
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local deletedBanners = {}
+
+local function removeBanner(obj)
+    if obj and obj.Parent and obj.Name == "PremiumDiscordBanner" and not deletedBanners[obj] then
+        pcall(function()
+            obj:Destroy()
+            deletedBanners[obj] = true
+        end)
+        return true
+    end
+    return false
+end
+
+local function scanAndRemove(parent)
+    if not parent then return end
+    removeBanner(parent)
+    for _, child in ipairs(parent:GetChildren()) do
+        pcall(function()
+            scanAndRemove(child)
+        end)
+    end
+end
+
+local function scanAll()
+    pcall(function()
+        for _, gui in ipairs(CoreGui:GetChildren()) do
+            scanAndRemove(gui)
+        end
+
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if playerGui then
+            for _, gui in ipairs(playerGui:GetChildren()) do
+                scanAndRemove(gui)
+            end
+        end
+    end)
+end
+
+-- Start banner remover immediately (no delay)
+task.spawn(function()
+    scanAll()
+
+    CoreGui.ChildAdded:Connect(function(child)
+        task.wait(0.1)
+        pcall(function()
+            scanAndRemove(child)
+        end)
+    end)
+
+    local function monitorPlayerGui()
+        local playerGui = player:WaitForChild("PlayerGui", 5)
+        if playerGui then
+            playerGui.ChildAdded:Connect(function(child)
+                task.wait(0.1)
+                pcall(function()
+                    scanAndRemove(child)
+                end)
+            end)
+        end
+    end
+
+    if player:FindFirstChild("PlayerGui") then
+        monitorPlayerGui()
+    else
+        player.ChildAdded:Connect(function(child)
+            if child.Name == "PlayerGui" then
+                monitorPlayerGui()
+            end
+        end)
+    end
+
+    while true do
+        task.wait(3)
+        pcall(function()
+            scanAll()
+        end)
+    end
+end)
+
+-- =====================================================
+-- KAWATAN LAGGER UI (unchanged 3‑minute loading panel)
+-- =====================================================
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "KawatanUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+--------------------------------------------------
+-- LOADING PANEL
+--------------------------------------------------
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromScale(0.35, 0.4)
+frame.Position = UDim2.fromScale(0.5, 0.5)
+frame.AnchorPoint = Vector2.new(0.5,0.5)
+frame.BackgroundColor3 = Color3.fromRGB(10,20,10)
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,20)
+
+-- TITLE
+local title = Instance.new("TextLabel")
+title.Text = "KAWATAN LAGGER"
+title.Size = UDim2.fromScale(1,0.15)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(0,255,140)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.Parent = frame
+
+-- AVATAR
+local avatar = Instance.new("ImageLabel")
+avatar.Size = UDim2.fromScale(0.18,0.28)
+avatar.Position = UDim2.fromScale(0.04,0.18)
+avatar.BackgroundTransparency = 1
+avatar.Parent = frame
+avatar.Image = "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=420&height=420&format=png"
+
+-- LOADING TEXT
+local loadingText = Instance.new("TextLabel")
+loadingText.Size = UDim2.fromScale(0.7,0.15)
+loadingText.Position = UDim2.fromScale(0.25,0.22)
+loadingText.BackgroundTransparency = 1
+loadingText.TextColor3 = Color3.fromRGB(200,255,200)
+loadingText.Font = Enum.Font.Gotham
+loadingText.TextScaled = true
+loadingText.Text = "Please wait to load the script"
+loadingText.Parent = frame
+
+-- PROGRESS BAR BG
+local barBG = Instance.new("Frame")
+barBG.Size = UDim2.fromScale(0.9,0.08)
+barBG.Position = UDim2.fromScale(0.05,0.6)
+barBG.BackgroundColor3 = Color3.fromRGB(25,45,25)
+barBG.Parent = frame
+Instance.new("UICorner", barBG)
+
+-- PROGRESS BAR
+local bar = Instance.new("Frame")
+bar.Size = UDim2.fromScale(0,1)
+bar.BackgroundColor3 = Color3.fromRGB(0,255,140)
+bar.Parent = barBG
+Instance.new("UICorner", bar)
+
+-- PERCENT
+local percent = Instance.new("TextLabel")
+percent.Size = UDim2.fromScale(1,0.1)
+percent.Position = UDim2.fromScale(0,0.72)
+percent.BackgroundTransparency = 1
+percent.TextColor3 = Color3.fromRGB(0,255,140)
+percent.Font = Enum.Font.GothamBold
+percent.TextScaled = true
+percent.Text = "0%"
+percent.Parent = frame
+
+-- BADGES
+local function badge(txt, x)
+    local b = Instance.new("TextLabel")
+    b.Size = UDim2.fromScale(0.25,0.08)
+    b.Position = UDim2.fromScale(x,0.86)
+    b.BackgroundColor3 = Color3.fromRGB(20,40,20)
+    b.Text = txt
+    b.TextColor3 = Color3.fromRGB(0,255,140)
+    b.Font = Enum.Font.Gotham
+    b.TextScaled = true
+    b.Parent = frame
+    Instance.new("UICorner", b)
+end
+
+badge("🔒 Secure", 0.05)
+badge("⚡ Fast", 0.37)
+badge("✨ Latest", 0.69)
+
+--------------------------------------------------
+-- LOADING SYSTEM (3 MINUTES)
+--------------------------------------------------
+
+local messages = {
+    "Please wait to load the script",
+    "Initializing modules...",
+    "Checking resources...",
+    "Setting up interface...",
+    "Finalizing..."
+}
+
+local total = 180
+
+for i = 1, total do
+    bar.Size = UDim2.fromScale(i/total,1)
+    percent.Text = math.floor((i/total)*100).."%"
+    loadingText.Text = messages[(i % #messages) + 1]
+    task.wait(1)
+end
+
+frame:Destroy()
+
+--------------------------------------------------
+-- MAIN PANEL
+--------------------------------------------------
+
+local panel = Instance.new("Frame")
+panel.Size = UDim2.fromScale(0.22,0.42)
+panel.Position = UDim2.fromScale(0.5,0.5)
+panel.AnchorPoint = Vector2.new(0.5,0.5)
+panel.BackgroundColor3 = Color3.fromRGB(0,60,0)
+panel.Parent = gui
+Instance.new("UICorner", panel)
+
+-- TITLE
+local title2 = Instance.new("TextLabel")
+title2.Text = "⚡ KAWATAN LAGGER"
+title2.Size = UDim2.fromScale(1,0.12)
+title2.BackgroundTransparency = 1
+title2.TextColor3 = Color3.fromRGB(0,255,140)
+title2.Font = Enum.Font.GothamBold
+title2.TextScaled = true
+title2.Parent = panel
+
+-- BUTTONS
+local function createBtn(text, y)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.fromScale(0.9,0.12)
+    btn.Position = UDim2.fromScale(0.05,y)
+    btn.Text = text.." : OFF"
+    btn.BackgroundColor3 = Color3.fromRGB(0,90,0)
+    btn.TextColor3 = Color3.fromRGB(200,255,200)
+    btn.Font = Enum.Font.Gotham
+    btn.TextScaled = true
+    btn.Parent = panel
+    Instance.new("UICorner", btn)
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text.." : "..(state and "ON" or "OFF")
+    end)
+end
+
+createBtn("Lag Server", 0.2)
+createBtn("Auto Grab", 0.35)
+createBtn("Anti Detect", 0.5)
+
+-- STATUS
+local status = Instance.new("TextLabel")
+status.Text = "Status: Ready"
+status.Size = UDim2.fromScale(1,0.1)
+status.Position = UDim2.fromScale(0,0.85)
+status.BackgroundTransparency = 1
+status.TextColor3 = Color3.fromRGB(0,255,140)
+status.Font = Enum.Font.Gotham
+status.TextScaled = true
+status.Parent = panel
